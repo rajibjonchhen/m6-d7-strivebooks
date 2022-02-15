@@ -1,7 +1,7 @@
 import express from "express";
 import mongoose  from "mongoose";
 import listEndpoints from 'express-list-endpoints'
-import usersRouter from "./service/users/users.js";
+import blogsRouter from "./service/users/blogs.js";
 import cors from 'cors'
 const {PORT = 3001} = process.env
 
@@ -10,7 +10,7 @@ const server = express()
 server.use(cors())
 server.use(express.json())
 
-server.use("/users", usersRouter)
+server.use("/blogs", blogsRouter)
 
 mongoose.connect(process.env.Mongo_Connection)
 mongoose.connection.on("connected", () => {
