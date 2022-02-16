@@ -151,4 +151,25 @@ blogsRouter.get("/:blogId/reviews/:reviewId", async(req, res, next) => {
     }
     })
 
+/**************************** delete specific review from specific blog ******************************/ 
+blogsRouter.delete("/:blogId/reviews/:reviewId", async(req, res, next) => {
+    try {
+    
+        const modifiedBlog = await blogsModel.findByIdAndUpdate(
+            req.params.blogId,
+            {$pull : {reviews : {_id : req.params.reviewId}}},
+            {new : true}
+        )
+        
+        if(modifiedBlog){
+                res.send(modifiedBlog)
+        }else{
+            next(createError(404, "could not find the specific blog with id",req.params.blogId))
+    
+        }
+    } catch (error) {
+        next(error)
+        
+    }
+    })
 export default blogsRouter
