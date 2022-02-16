@@ -172,4 +172,31 @@ blogsRouter.delete("/:blogId/reviews/:reviewId", async(req, res, next) => {
         
     }
     })
+
+/**************************** edit specific review from specific blog ******************************/ 
+blogsRouter.put("/:blogId/reviews/:reviewId", async(req, res, next) => {
+    try {
+        const reqBlog = await blogsModel.findByIdAndUpdate(req.params.blogId)
+        
+        if(reqBlog){
+            const index = reqBlog.reviews.findIndex(review => review._id.toString() === req.params.reviewId )
+            if( index !== -1){
+                reqBlog.reviews[index] = {
+                    ...reqBlog.reviews[index].toObject(),
+                    ...req.body
+                }
+                await reqBlog.save()
+                res.send(reqBlog)
+            }  else{
+                next(createError(404, "could not find the specific blog with id",req.params.blogId))
+            }  
+        }else{
+            next(createError(404, "could not find the specific blog with id",req.params.blogId))
+    
+        }
+    } catch (error) {
+        next(error)
+        
+    }
+    })
 export default blogsRouter
