@@ -129,4 +129,26 @@ blogsRouter.get("/:blogId/reviews", async(req, res, next) => {
     }
     })
 
+/**************************** get specific review from specific blog ******************************/ 
+blogsRouter.get("/:blogId/reviews/:reviewId", async(req, res, next) => {
+    try {
+        const blog = await blogsModel.findById(req.params.blogId)
+        if(blog){
+            const reqReview = blog.reviews.find(review => review._id.toString() === req.params.reviewId)
+            if(reqReview){
+                res.status(200).send(blog.reviews)
+            }else{
+            next(createError(404, "could not find the specific review with id",req.params.reviewId))
+               
+            }
+        }else{
+            next(createError(404, "could not find the specific blog with id",req.params.blogId))
+    
+        }
+    } catch (error) {
+        next(error)
+        
+    }
+    })
+
 export default blogsRouter
