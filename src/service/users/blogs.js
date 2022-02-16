@@ -89,8 +89,8 @@ blogsRouter.delete("/:blogId", async(req, res, next) => {try {
     next(error)
 }})
 
-/**************************** delete specific ******************************/ 
-blogsRouter.post("/blogId/reviews", async(req, res, next) => {
+/**************************** add review to specific blog ******************************/ 
+blogsRouter.post("/:blogId/reviews", async(req, res, next) => {
 try {
     const blogId =  req.params.blogId
     const newReview = {...req.body}
@@ -101,6 +101,7 @@ try {
             {$push: {reviews : newReview}},
             {new : true}
         ) 
+        res.status(201).send(modifiedBlog)
     }else{
         next(createError(404, "could not find the specific blog with id",blogId))
 
@@ -110,5 +111,22 @@ try {
     
 }
 })
+
+/**************************** get all reviews to specific blog ******************************/ 
+blogsRouter.get("/:blogId/reviews", async(req, res, next) => {
+    try {
+        const blogId =  req.params.blogId
+        const blog = await blogsModel.findById(blogId)
+        if(blog){
+            res.status(200).send(blog.reviews)
+        }else{
+            next(createError(404, "could not find the specific blog with id",blogId))
+    
+        }
+    } catch (error) {
+        next(error)
+        
+    }
+    })
 
 export default blogsRouter
