@@ -15,6 +15,10 @@ const userSchema = new Schema({
 	      "avatar":{type:String, required:true}
 	    },
 	    "content": String,
+		"reviews": [{
+			comment:String,
+			rate: Number
+		}]
     },
     {
         timestamps: true,
