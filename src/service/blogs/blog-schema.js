@@ -1,19 +1,17 @@
 import mongoose from "mongoose";
 
 const { Schema, model } = mongoose
-const userSchema = new Schema({
+const blogSchema = new Schema({
     
-	    "category": {type:String, required:true},
+	    "category": {type:String, required:true, enum:['Horror','Romantic','History','Scifi']},
 	    "title": {type:String, required:true},
-	    "cover":{type:String, required:true},
+	    "cover":{type:String},
 	    "readTime": {
 	      "value": Number,
 	      "unit": String
 	    },
-	    "author": {
-	      "name":{type:String, required:true},
-	      "avatar":{type:String, required:true}
-	    },
+	    "authors": [{type : Schema.Types.ObjectId, ref:"Author"
+	    }],
 	    "content": String,
 		"reviews": [{
 			comment:String,
@@ -25,4 +23,4 @@ const userSchema = new Schema({
       }          
 )
 
-export default model("Blogs", userSchema )
+export default model("Blogs", blogSchema )
