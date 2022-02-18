@@ -1,6 +1,6 @@
 import express, { Router } from "express";
 import createError from "http-errors";
-import blogsModel from "./blog-schema.js";
+import BlogModel from "./blog-schema.js";
 import q2m from "query-to-mongo";
 import {v2 as cloudinary} from 'cloudinary'
 import {CloudinaryStorage} from 'multer-storage-cloudinary'
@@ -21,7 +21,10 @@ const cloudinaryUploader = multer({
 /************************* post new *********************************/
 blogsRouter.post("/", async (req, res, next) => {
   try {
-    const newBlog = new blogsModel(req.body);
+    const newBlog = new BlogModel(req.body).populate({
+      path : "authors",
+      select: "name email"
+    });
     const { _id } = await newBlog.save();
     res.status(201).send({ _id: _id });
   } catch (error) {
@@ -40,9 +43,9 @@ blogsRouter.get("/", async (req, res, next) => {
 
     const query = {...defaultQuery,...req.query}
     const mongoQuery = q2m(query);
-    const total = await blogsModel.countDocuments(mongoQuery.criteria);
+    const total = await BlogModel.countDocuments(mongoQuery.criteria);
 
-      const blogs = await blogsModel
+      const blogs = await BlogModel
         .find(mongoQuery.criteria)
         .sort(mongoQuery.options.sort)
         .skip(mongoQuery.options.skip)
@@ -64,7 +67,10 @@ blogsRouter.get("/", async (req, res, next) => {
 blogsRouter.get("/:blogId", async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
-    const blog = await blogsModel.findById(blogId);
+    const blog = await BlogModel.findById(blogId).populate({
+      path : "authors",
+      select: "name email"
+    });
     res.status(200).send(blog);
 
     if (true) {
@@ -81,7 +87,7 @@ blogsRouter.get("/:blogId", async (req, res, next) => {
 blogsRouter.put("/:blogId", async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
-    const updatedBlog = await blogsModel.findByIdAndUpdate(blogId, req.body, {
+    const updatedBlog = await BlogModel.findByIdAndUpdate(blogId, req.body, {
       new: true,
     });
     if (updatedBlog) {
@@ -94,12 +100,47 @@ blogsRouter.put("/:blogId", async (req, res, next) => {
   }
 });
 
+/***************************** update the like of specific blog post *****************************/
+
+blogsRouter.put("/:blogId/likes", async (req, res, next) => {
+  try {
+    const reqBlog = await BlogModel.findByIdAndUpdate(req.params.blogId);
+    if (reqBlog) {
+   
+      const index = reqBlog.likes.findIndex(
+        (id) => id.toString() === req.body._id
+        );
+      if (index === -1) {
+        reqBlog.likes.push(req.body._id)
+        await reqBlog.save();
+        res.send(reqBlog);
+      } else {
+        reqBlog.likes = reqBlog.likes.filter(id => id.toString() !== req.body._id)
+        console.log("reqBlog like removed",reqBlog)
+        await reqBlog.save();
+        res.send(reqBlog);
+
+      }
+    } else {
+      next(
+        createError(
+          404,
+          "could not find the specific blog with id",
+          req.params.blogId
+        )
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 /***************************** update  cover image specific *****************************/
 
 blogsRouter.put("/:blogId/cover",cloudinaryUploader, async (req, res, next) => {
     try {
       const blogId = req.params.blogId;
-      const updatedBlog = await blogsModel.findByIdAndUpdate(
+      const updatedBlog = await BlogModel.findByIdAndUpdate(
           blogId, 
         {cover:req.file.path}, {
         new: true,
@@ -121,7 +162,7 @@ blogsRouter.put("/:blogId/cover",cloudinaryUploader, async (req, res, next) => {
 blogsRouter.delete("/:blogId", async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
-    const deletedBlog = await blogsModel.findByIdAndDelete(blogId);
+    const deletedBlog = await BlogModel.findByIdAndDelete(blogId);
     if (deletedBlog) {
       res.status(204).send();
     } else {
@@ -139,9 +180,9 @@ blogsRouter.post("/:blogId/reviews", async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
     const newReview = { ...req.body };
-    const blog = await blogsModel.findById(blogId);
+    const blog = await BlogModel.findById(blogId);
     if (blog) {
-      const modifiedBlog = await blogsModel.findByIdAndUpdate(
+      const modifiedBlog = await BlogModel.findByIdAndUpdate(
         blogId,
         { $push: { reviews: newReview } },
         { new: true }
@@ -161,7 +202,7 @@ blogsRouter.post("/:blogId/reviews", async (req, res, next) => {
 blogsRouter.get("/:blogId/reviews", async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
-    const blog = await blogsModel.findById(blogId);
+    const blog = await BlogModel.findById(blogId);
     if (blog) {
       res.status(200).send(blog.reviews);
     } else {
@@ -177,7 +218,7 @@ blogsRouter.get("/:blogId/reviews", async (req, res, next) => {
 /**************************** get specific review from specific blog ******************************/
 blogsRouter.get("/:blogId/reviews/:reviewId", async (req, res, next) => {
   try {
-    const blog = await blogsModel.findById(req.params.blogId);
+    const blog = await BlogModel.findById(req.params.blogId);
     if (blog) {
       const reqReview = blog.reviews.find(
         (review) => review._id.toString() === req.params.reviewId
@@ -210,7 +251,7 @@ blogsRouter.get("/:blogId/reviews/:reviewId", async (req, res, next) => {
 /**************************** delete specific review from specific blog ******************************/
 blogsRouter.delete("/:blogId/reviews/:reviewId", async (req, res, next) => {
   try {
-    const modifiedBlog = await blogsModel.findByIdAndUpdate(
+    const modifiedBlog = await BlogModel.findByIdAndUpdate(
       req.params.blogId,
       { $pull: { reviews: { _id: req.params.reviewId } } },
       { new: true }
@@ -235,7 +276,7 @@ blogsRouter.delete("/:blogId/reviews/:reviewId", async (req, res, next) => {
 /**************************** edit specific review from specific blog ******************************/
 blogsRouter.put("/:blogId/reviews/:reviewId", async (req, res, next) => {
   try {
-    const reqBlog = await blogsModel.findByIdAndUpdate(req.params.blogId);
+    const reqBlog = await BlogModel.findByIdAndUpdate(req.params.blogId);
 
     if (reqBlog) {
       const index = reqBlog.reviews.findIndex(
