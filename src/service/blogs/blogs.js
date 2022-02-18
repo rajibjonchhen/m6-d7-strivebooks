@@ -21,10 +21,7 @@ const cloudinaryUploader = multer({
 /************************* post new *********************************/
 blogsRouter.post("/", async (req, res, next) => {
   try {
-    const newBlog = new BlogModel(req.body).populate({
-      path : "authors",
-      select: "name email"
-    });
+    const newBlog = new BlogModel(req.body)
     const { _id } = await newBlog.save();
     res.status(201).send({ _id: _id });
   } catch (error) {
@@ -49,7 +46,10 @@ blogsRouter.get("/", async (req, res, next) => {
         .find(mongoQuery.criteria)
         .sort(mongoQuery.options.sort)
         .skip(mongoQuery.options.skip)
-        .limit(mongoQuery.options.limit);
+        .limit(mongoQuery.options.limit).populate({
+          path : "authors",
+          select: "name email"
+        });;
       res.status(200).send({
         links: mongoQuery.links("/blogs", total),
         total,
