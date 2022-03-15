@@ -18,6 +18,7 @@ const cloudinaryUploader = multer({
         })
       }).single("image")
 
+
 /************************* post new *********************************/
 blogsRouter.post("/", async (req, res, next) => {
   try {
