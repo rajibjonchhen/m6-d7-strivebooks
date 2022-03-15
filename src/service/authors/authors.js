@@ -5,6 +5,7 @@ import q2m from "query-to-mongo";
 import {v2 as cloudinary} from 'cloudinary'
 import {CloudinaryStorage} from 'multer-storage-cloudinary'
 import multer from "multer";
+import { basicAuthMW } from "../../auth/basic.js";
 
 const authorsRouter = Router();
 
@@ -30,7 +31,7 @@ authorsRouter.post("/", async (req, res, next) => {
 });
 
 /*************************** get all the *******************************/
-authorsRouter.get("/", async (req, res, next) => {
+authorsRouter.get("/", basicAuthMW, async (req, res, next) => {
   try {
       const defaultQuery = {
           sort:"-createdAt",
@@ -61,7 +62,7 @@ authorsRouter.get("/", async (req, res, next) => {
 
 /****************************** get specific ****************************/
 
-authorsRouter.get("/:authorId", async (req, res, next) => {
+authorsRouter.get("/:authorId", basicAuthMW, async (req, res, next) => {
   try {
     const authorId = req.params.authorId;
     const author = await AuthorModel.findById(authorId);
@@ -78,7 +79,7 @@ authorsRouter.get("/:authorId", async (req, res, next) => {
 
 /***************************** update specific author *****************************/
 
-authorsRouter.put("/:authorId", async (req, res, next) => {
+authorsRouter.put("/:authorId", basicAuthMW, async (req, res, next) => {
   try {
     const authorId = req.params.authorId;
     const updatedAuthor = await AuthorModel.findByIdAndUpdate(authorId, req.body, {
@@ -97,7 +98,7 @@ authorsRouter.put("/:authorId", async (req, res, next) => {
 
 /***************************** update  avatar specific *****************************/
 
-authorsRouter.put("/:authorId/avatar",cloudinaryUploader, async (req, res, next) => {
+authorsRouter.put("/:authorId/avatar",basicAuthMW, cloudinaryUploader, async (req, res, next) => {
     try {
       const authorId = req.params.authorId;
       const updatedAuthor = await AuthorModel.findByIdAndUpdate(
@@ -118,7 +119,7 @@ authorsRouter.put("/:authorId/avatar",cloudinaryUploader, async (req, res, next)
 
 /**************************** delete specific author ******************************/
 
-authorsRouter.delete("/:authorId", async (req, res, next) => {
+authorsRouter.delete("/:authorId",basicAuthMW, async (req, res, next) => {
   try {
     const authorId = req.params.authorId;
     const deletedAuthor = await AuthorModel.findByIdAndDelete(authorId);
