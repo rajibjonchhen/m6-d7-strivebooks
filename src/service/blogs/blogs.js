@@ -32,7 +32,39 @@ blogsRouter.post("/",basicAuthMW, async (req, res, next) => {
 });
 
 /*************************** get all the *******************************/
-blogsRouter.get("/", async (req, res, next) => {
+blogsRouter.get("/me/stories",basicAuthMW, async (req, res, next) => {
+  try {
+      const defaultQuery = {
+          sort:"-createdAt",
+          skip:0,
+          limit:20,
+      }
+
+    const query = {...defaultQuery,...req.query}
+    const mongoQuery = q2m(query);
+    const total = await BlogModel.countDocuments(mongoQuery.criteria);
+
+      const blogs = await BlogModel
+        .find({authors:{$in:[req.author._id]}})
+        .sort(mongoQuery.options.sort)
+        .skip(mongoQuery.options.skip)
+        .limit(mongoQuery.options.limit).populate({
+          path : "authors",
+          select: "name email"
+        });;
+      res.status(200).send({
+        links: mongoQuery.links("/blogs", total),
+        total,
+        totalPages: Math.ceil(total / mongoQuery.options.limit),
+        blogs
+      });
+   
+  } catch (error) {
+    next(error);
+  }
+});
+/*************************** get all the *******************************/
+blogsRouter.get("/",basicAuthMW, async (req, res, next) => {
   try {
       const defaultQuery = {
           sort:"-createdAt",
@@ -89,7 +121,7 @@ blogsRouter.get("/:blogId", async (req, res, next) => {
 blogsRouter.put("/:blogId", basicAuthMW,async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
-    const findBlog = await BlogModel.findOne({_id:blogId,authors:{$in:[req.author._id]}});
+    const findBlog = await BlogModel.findOne({_id:blogId,authors:{$in:[req.author._id]}}); //$in checks if value is in the array
     if (findBlog) {
        await findBlog.update(req.body)
       res.status(204).send();
