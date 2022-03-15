@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/rajibjonchhen/m6-d7-strivebooks#readme",
   "dependencies": {
+    "bcrypt": "^5.0.1",
     "cloudinary": "^1.28.1",
     "cors": "^2.8.5",
     "express": "^4.17.2",

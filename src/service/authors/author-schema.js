@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt"
 
 const { Schema, model } = mongoose
 const AurthorSchema = new Schema({
@@ -23,5 +24,12 @@ AurthorSchema.pre("save", async function(next){
   }
   next()
 })
+
+AurthorSchema.methods.toJSON = function(){
+  const authorDocument = this 
+  const authorObject = authorDocument.toObject()
+  delete authorObject.password
+  return authorObject
+}
 
 export default model("Author", AurthorSchema )
