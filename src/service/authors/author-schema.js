@@ -6,7 +6,7 @@ const AurthorSchema = new Schema({
 
 		"name":{type:String, required:true},
 		"avatar":{type:String},
-		"email":{type:String, required:true},
+		"email":{type:String, required:true, unique:true},
 		"password":{type:String, required:true},
     "role" : {type:String, enum:["user", "admin"]}
     },
@@ -32,4 +32,26 @@ AurthorSchema.methods.toJSON = function(){
   return authorObject
 }
 
+AurthorSchema.statics.checkCredentials = async function(email, plainPw){
+
+  const author = await this.findOne({email})
+
+  if(author){
+
+    const isMatch = await bcrypt.compare(plainPw, author.password)
+
+    if(isMatch){
+
+      return author
+
+    }else {
+
+      return null
+    }
+
+}else{
+
+  return null
+  }
+}
 export default model("Author", AurthorSchema )

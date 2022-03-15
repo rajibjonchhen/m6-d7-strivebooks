@@ -2,22 +2,21 @@ import express, { Router } from "express";
 import createError from "http-errors";
 import AuthorModel from "./author-schema.js";
 import q2m from "query-to-mongo";
-import {v2 as cloudinary} from 'cloudinary'
-import {CloudinaryStorage} from 'multer-storage-cloudinary'
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 import { basicAuthMW } from "../../auth/basic.js";
 
 const authorsRouter = Router();
 
-
 const cloudinaryUploader = multer({
-        storage: new CloudinaryStorage({
-        cloudinary,
-          params:{
-            folder:'blogs'
-          }
-        })
-      }).single("image")
+  storage: new CloudinaryStorage({
+    cloudinary,
+    params: {
+      folder: "blogs",
+    },
+  }),
+}).single("image");
 
 /************************* post new *********************************/
 authorsRouter.post("/", async (req, res, next) => {
@@ -30,31 +29,68 @@ authorsRouter.post("/", async (req, res, next) => {
   }
 });
 
-/*************************** get all the *******************************/
-authorsRouter.get("/", basicAuthMW, async (req, res, next) => {
-  try {
-      const defaultQuery = {
-          sort:"-createdAt",
-          skip:0,
-          limit:20,
-      }
 
-    const query = {...defaultQuery,...req.query}
+authorsRouter.post("/login",async (req, res, next) => {
+  try {
+    const {email,password} = req.body;
+
+    const matching = await AuthorModel.checkCredentials(email,password)
+    if(matching){
+      const token = Buffer.from(`${email}:${password}`).toString("base64")
+      res.status(201).send({ token });
+    }
+  
+    else{
+      res.status(401).send("nononnnononononono")
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/*************************** get me *******************************/
+authorsRouter.get("/me", basicAuthMW, async (req, res, next) => {
+  try {
+    console.log(req.author)
+    res.send(req.author);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/*************************** edit me *******************************/
+authorsRouter.put("/me", basicAuthMW, async (req, res, next) => {
+  try {
+    console.log(req.author)
+    res.send(req.author);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/*************************** get all the *******************************/
+authorsRouter.get("/", async (req, res, next) => {
+  try {
+    const defaultQuery = {
+      sort: "-createdAt",
+      skip: 0,
+      limit: 20,
+    };
+
+    const query = { ...defaultQuery, ...req.query };
     const mongoQuery = q2m(query);
     const total = await AuthorModel.countDocuments(mongoQuery.criteria);
 
-      const authors = await AuthorModel
-        .find(mongoQuery.criteria)
-        .sort(mongoQuery.options.sort)
-        .skip(mongoQuery.options.skip)
-        .limit(mongoQuery.options.limit);
-      res.status(200).send({
-        links: mongoQuery.links("/authors", total),
-        total,
-        totalPages: Math.ceil(total / mongoQuery.options.limit),
-        authors
-      });
-   
+    const authors = await AuthorModel.find(mongoQuery.criteria)
+      .sort(mongoQuery.options.sort)
+      .skip(mongoQuery.options.skip)
+      .limit(mongoQuery.options.limit);
+    res.status(200).send({
+      links: mongoQuery.links("/authors", total),
+      total,
+      totalPages: Math.ceil(total / mongoQuery.options.limit),
+      authors,
+    });
   } catch (error) {
     next(error);
   }
@@ -82,9 +118,13 @@ authorsRouter.get("/:authorId", basicAuthMW, async (req, res, next) => {
 authorsRouter.put("/:authorId", basicAuthMW, async (req, res, next) => {
   try {
     const authorId = req.params.authorId;
-    const updatedAuthor = await AuthorModel.findByIdAndUpdate(authorId, req.body, {
-      new: true,
-    });
+    const updatedAuthor = await AuthorModel.findByIdAndUpdate(
+      authorId,
+      req.body,
+      {
+        new: true,
+      }
+    );
     if (updatedAuthor) {
       res.status(200).send(updatedAuthor);
     } else {
@@ -95,19 +135,24 @@ authorsRouter.put("/:authorId", basicAuthMW, async (req, res, next) => {
   }
 });
 
-
 /***************************** update  avatar specific *****************************/
 
-authorsRouter.put("/:authorId/avatar",basicAuthMW, cloudinaryUploader, async (req, res, next) => {
+authorsRouter.put(
+  "/:authorId/avatar",
+  basicAuthMW,
+  cloudinaryUploader,
+  async (req, res, next) => {
     try {
       const authorId = req.params.authorId;
       const updatedAuthor = await AuthorModel.findByIdAndUpdate(
-          authorId, 
-        {author:{avatar:req.file.path}}, {
-        new: true,
-      });
+        authorId,
+        { author: { avatar: req.file.path } },
+        {
+          new: true,
+        }
+      );
       if (updatedAuthor) {
-        console.log(updatedAuthor)
+        console.log(updatedAuthor);
         res.status(200).send(updatedAuthor);
       } else {
         next(createError(404, "could not find the specific "));
@@ -115,11 +160,12 @@ authorsRouter.put("/:authorId/avatar",basicAuthMW, cloudinaryUploader, async (re
     } catch (error) {
       next(error);
     }
-  });
+  }
+);
 
 /**************************** delete specific author ******************************/
 
-authorsRouter.delete("/:authorId",basicAuthMW, async (req, res, next) => {
+authorsRouter.delete("/:authorId", basicAuthMW, async (req, res, next) => {
   try {
     const authorId = req.params.authorId;
     const deletedAuthor = await AuthorModel.findByIdAndDelete(authorId);

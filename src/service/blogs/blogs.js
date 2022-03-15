@@ -5,6 +5,7 @@ import q2m from "query-to-mongo";
 import {v2 as cloudinary} from 'cloudinary'
 import {CloudinaryStorage} from 'multer-storage-cloudinary'
 import multer from "multer";
+import { basicAuthMW } from "../../auth/basic.js";
 
 const blogsRouter = Router();
 
@@ -20,9 +21,9 @@ const cloudinaryUploader = multer({
 
 
 /************************* post new *********************************/
-blogsRouter.post("/", async (req, res, next) => {
+blogsRouter.post("/",basicAuthMW, async (req, res, next) => {
   try {
-    const newBlog = new BlogModel(req.body)
+    const newBlog = new BlogModel({...req.body,authors:[req.author._id]})
     const { _id } = await newBlog.save();
     res.status(201).send({ _id: _id });
   } catch (error) {
@@ -85,14 +86,13 @@ blogsRouter.get("/:blogId", async (req, res, next) => {
 
 /***************************** update specific *****************************/
 
-blogsRouter.put("/:blogId", async (req, res, next) => {
+blogsRouter.put("/:blogId", basicAuthMW,async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
-    const updatedBlog = await BlogModel.findByIdAndUpdate(blogId, req.body, {
-      new: true,
-    });
-    if (updatedBlog) {
-      res.status(200).send(updatedBlog);
+    const findBlog = await BlogModel.findOne({_id:blogId,authors:{$in:[req.author._id]}});
+    if (findBlog) {
+       await findBlog.update(req.body)
+      res.status(204).send();
     } else {
       next(createError(404, "could not find the specific "));
     }
