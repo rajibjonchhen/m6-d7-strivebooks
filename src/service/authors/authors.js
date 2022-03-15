@@ -61,8 +61,11 @@ authorsRouter.get("/me", basicAuthMW, async (req, res, next) => {
 /*************************** edit me *******************************/
 authorsRouter.put("/me", basicAuthMW, async (req, res, next) => {
   try {
-    console.log(req.author)
-    res.send(req.author);
+    const author = await AuthorModel.findOne({_id:req.author._id})
+    if(author){
+      await author.update(req.body)
+    }
+    res.send(author);
   } catch (error) {
     next(error);
   }

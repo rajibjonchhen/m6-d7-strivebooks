@@ -6,6 +6,7 @@ import {v2 as cloudinary} from 'cloudinary'
 import {CloudinaryStorage} from 'multer-storage-cloudinary'
 import multer from "multer";
 import { basicAuthMW } from "../../auth/basic.js";
+import { adminOnlyMiddleware } from "../../auth/adminMw.js";
 
 const blogsRouter = Router();
 
@@ -64,7 +65,7 @@ blogsRouter.get("/me/stories",basicAuthMW, async (req, res, next) => {
   }
 });
 /*************************** get all the *******************************/
-blogsRouter.get("/",basicAuthMW, async (req, res, next) => {
+blogsRouter.get("/",basicAuthMW, adminOnlyMiddleware, async (req, res, next) => {
   try {
       const defaultQuery = {
           sort:"-createdAt",
@@ -118,13 +119,13 @@ blogsRouter.get("/:blogId", async (req, res, next) => {
 
 /***************************** update specific *****************************/
 
-blogsRouter.put("/:blogId", basicAuthMW,async (req, res, next) => {
+blogsRouter.put("/:blogId", basicAuthMW, async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
     const findBlog = await BlogModel.findOne({_id:blogId,authors:{$in:[req.author._id]}}); //$in checks if value is in the array
     if (findBlog) {
        await findBlog.update(req.body)
-      res.status(204).send();
+      res.status(204).send("Blog updated");
     } else {
       next(createError(404, "could not find the specific "));
     }
@@ -170,7 +171,7 @@ blogsRouter.put("/:blogId/likes", async (req, res, next) => {
 
 /***************************** update  cover image specific *****************************/
 
-blogsRouter.put("/:blogId/cover",cloudinaryUploader, async (req, res, next) => {
+blogsRouter.put("/:blogId/cover", basicAuthMW, cloudinaryUploader, async (req, res, next) => {
     try {
       const blogId = req.params.blogId;
       const updatedBlog = await BlogModel.findByIdAndUpdate(
@@ -192,15 +193,22 @@ blogsRouter.put("/:blogId/cover",cloudinaryUploader, async (req, res, next) => {
 
 /**************************** delete specific ******************************/
 
-blogsRouter.delete("/:blogId", async (req, res, next) => {
+blogsRouter.delete("/:blogId",basicAuthMW, async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
-    const deletedBlog = await BlogModel.findByIdAndDelete(blogId);
-    if (deletedBlog) {
-      res.status(204).send();
+    const reqBlog = await BlogModel.findOne({_id:blogId, authors:{$in:{_id:req.author._id}}})
+    if(req.author){
+      const deletedBlog = await BlogModel.findByIdAndDelete(blogId);
+      if (deletedBlog) {
+        res.status(204).send();
+      } else {
+        next(
+          createError(404, "could not find the specific blog with id", blogId)
+        );
+      }
     } else {
       next(
-        createError(404, "could not find the specific blog with id", blogId)
+        createError(403, "Not authorised to delete blog with", blogId)
       );
     }
   } catch (error) {
