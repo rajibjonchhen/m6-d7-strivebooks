@@ -66,7 +66,7 @@ blogsRouter.get("/me/stories",JWTAuthMiddleware, async (req, res, next) => {
   }
 });
 /*************************** get all the *******************************/
-blogsRouter.get("/",basicAuthMW, async (req, res, next) => {
+blogsRouter.get("/",JWTAuthMiddleware, async (req, res, next) => {
   try {
       const defaultQuery = {
           sort:"-createdAt",
@@ -120,7 +120,7 @@ blogsRouter.get("/:blogId", async (req, res, next) => {
 
 /***************************** update specific *****************************/
 
-blogsRouter.put("/:blogId", basicAuthMW, adminOnlyMiddleware, async (req, res, next) => {
+blogsRouter.put("/:blogId", JWTAuthMiddleware, adminOnlyMiddleware, async (req, res, next) => {
   try {
 
     const blogId = req.params.blogId;

@@ -6,7 +6,8 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 import { basicAuthMW } from "../../auth/basic.js";
-import { authenticateAuthor } from "../../auth/tools.js";
+import { authenticateAuthor, generateJWTToken } from "../../auth/tools.js";
+import { JWTAuthMiddleware } from "../../auth/token.js";
 
 const authorsRouter = Router();
 
@@ -20,11 +21,11 @@ const cloudinaryUploader = multer({
 }).single("image");
 
 /************************* post new *********************************/
-authorsRouter.post("/", async (req, res, next) => {
+authorsRouter.post("/register", async (req, res, next) => {
   try {
     const newAuthor = new AuthorModel(req.body);
     const { _id } = await newAuthor.save();
-    
+    const token =  await authenticateAuthor(newAuthor.toObject())
     res.status(201).send({ _id: _id, token : token });
   } catch (error) {
     next(error);
@@ -41,7 +42,7 @@ authorsRouter.post("/login",async (req, res, next) => {
     const author = await AuthorModel.checkCredentials(email, password)
   if(author){
     const token = await authenticateAuthor(author)
-    res.send({ token });
+    res.send({ token:token, _id : author._id });
   } else {
     next(createError(401, "Credentials are not oK !!!"))
   }
@@ -52,10 +53,12 @@ authorsRouter.post("/login",async (req, res, next) => {
 });
 
 /*************************** get me *******************************/
-authorsRouter.get("/me", basicAuthMW, async (req, res, next) => {
+authorsRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
-    console.log(req.author)
-    res.send(req.author);
+    const reqAuthor = AuthorModel.findById(req.author._id)
+    // console.log("reqAuthor",reqAuthor)
+   
+    res.send(reqAuthor);
   } catch (error) {
     next(error);
   }
@@ -121,7 +124,7 @@ authorsRouter.get("/:authorId", basicAuthMW, async (req, res, next) => {
 
 /***************************** update specific author *****************************/
 
-authorsRouter.put("/:authorId", basicAuthMW, async (req, res, next) => {
+authorsRouter.put("/:authorId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const authorId = req.params.authorId;
     const updatedAuthor = await AuthorModel.findByIdAndUpdate(
@@ -171,7 +174,7 @@ authorsRouter.put(
 
 /**************************** delete specific author ******************************/
 
-authorsRouter.delete("/:authorId", basicAuthMW, async (req, res, next) => {
+authorsRouter.delete("/:authorId", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const authorId = req.params.authorId;
     const deletedAuthor = await AuthorModel.findByIdAndDelete(authorId);
