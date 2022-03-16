@@ -7,6 +7,7 @@ import {CloudinaryStorage} from 'multer-storage-cloudinary'
 import multer from "multer";
 import { basicAuthMW } from "../../auth/basic.js";
 import { adminOnlyMiddleware } from "../../auth/adminMw.js";
+import { JWTAuthMiddleware } from "../../auth/token.js";
 
 const blogsRouter = Router();
 
@@ -22,7 +23,7 @@ const cloudinaryUploader = multer({
 
 
 /************************* post new *********************************/
-blogsRouter.post("/",basicAuthMW, async (req, res, next) => {
+blogsRouter.post("/", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const newBlog = new BlogModel({...req.body,authors:[req.author._id]})
     const { _id } = await newBlog.save();
@@ -33,7 +34,7 @@ blogsRouter.post("/",basicAuthMW, async (req, res, next) => {
 });
 
 /*************************** get all the *******************************/
-blogsRouter.get("/me/stories",basicAuthMW, async (req, res, next) => {
+blogsRouter.get("/me/stories",JWTAuthMiddleware, async (req, res, next) => {
   try {
       const defaultQuery = {
           sort:"-createdAt",

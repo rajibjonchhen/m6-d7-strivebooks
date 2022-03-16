@@ -6,6 +6,7 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 import { basicAuthMW } from "../../auth/basic.js";
+import { authenticateAuthor } from "../../auth/tools.js";
 
 const authorsRouter = Router();
 
@@ -23,26 +24,28 @@ authorsRouter.post("/", async (req, res, next) => {
   try {
     const newAuthor = new AuthorModel(req.body);
     const { _id } = await newAuthor.save();
-    res.status(201).send({ _id: _id });
+    
+    res.status(201).send({ _id: _id, token : token });
   } catch (error) {
     next(error);
   }
 });
 
 
+
+
 authorsRouter.post("/login",async (req, res, next) => {
   try {
     const {email,password} = req.body;
 
-    const matching = await AuthorModel.checkCredentials(email,password)
-    if(matching){
-      const token = Buffer.from(`${email}:${password}`).toString("base64")
-      res.status(201).send({ token });
-    }
-  
-    else{
-      res.status(401).send("nononnnononononono")
-    }
+    const author = await AuthorModel.checkCredentials(email, password)
+  if(author){
+    const token = await authenticateAuthor(author)
+    res.send({ token });
+  } else {
+    next(createError(401, "Credentials are not oK !!!"))
+  }
+    
   } catch (error) {
     next(error);
   }
