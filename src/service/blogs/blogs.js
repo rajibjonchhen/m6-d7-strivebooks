@@ -65,7 +65,7 @@ blogsRouter.get("/me/stories",basicAuthMW, async (req, res, next) => {
   }
 });
 /*************************** get all the *******************************/
-blogsRouter.get("/",basicAuthMW, adminOnlyMiddleware, async (req, res, next) => {
+blogsRouter.get("/",basicAuthMW, async (req, res, next) => {
   try {
       const defaultQuery = {
           sort:"-createdAt",
@@ -119,19 +119,33 @@ blogsRouter.get("/:blogId", async (req, res, next) => {
 
 /***************************** update specific *****************************/
 
-blogsRouter.put("/:blogId", basicAuthMW, async (req, res, next) => {
+blogsRouter.put("/:blogId", basicAuthMW, adminOnlyMiddleware, async (req, res, next) => {
   try {
+
     const blogId = req.params.blogId;
-    const findBlog = await BlogModel.findOne({_id:blogId,authors:{$in:[req.author._id]}}); //$in checks if value is in the array
-    if (findBlog) {
-       await findBlog.update(req.body)
-      res.status(204).send("Blog updated");
+    const updatedBlog = await BlogModel.findByIdAndUpdate(blogId, req.body, {
+      new: true,
+    });
+    if (updatedBlog) {
+      res.status(200).send(updatedBlog);
     } else {
       next(createError(404, "could not find the specific "));
     }
   } catch (error) {
     next(error);
   }
+  // try {
+  //   const blogId = req.params.blogId;
+  //   const findBlog = await BlogModel.findOne({_id:blogId,authors:{$in:[req.author._id]}}); //$in checks if value is in the array
+  //   if (findBlog) {
+  //      await findBlog.update(req.body)
+  //     res.status(204).send("Blog updated");
+  //   } else {
+  //     next(createError(404, "could not find the specific "));
+  //   }
+  // } catch (error) {
+  //   next(error);
+  // }
 });
 
 /***************************** update the like of specific blog post *****************************/
@@ -193,7 +207,7 @@ blogsRouter.put("/:blogId/cover", basicAuthMW, cloudinaryUploader, async (req, r
 
 /**************************** delete specific ******************************/
 
-blogsRouter.delete("/:blogId",basicAuthMW, async (req, res, next) => {
+blogsRouter.delete("/:blogId", basicAuthMW, async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
     const reqBlog = await BlogModel.findOne({_id:blogId, authors:{$in:{_id:req.author._id}}})
@@ -217,7 +231,7 @@ blogsRouter.delete("/:blogId",basicAuthMW, async (req, res, next) => {
 });
 
 /**************************** add review to specific blog ******************************/
-blogsRouter.post("/:blogId/reviews", async (req, res, next) => {
+blogsRouter.post("/:blogId/reviews", basicAuthMW, async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
     const newReview = { ...req.body };
@@ -240,7 +254,7 @@ blogsRouter.post("/:blogId/reviews", async (req, res, next) => {
 });
 
 /**************************** get all reviews to specific blog ******************************/
-blogsRouter.get("/:blogId/reviews", async (req, res, next) => {
+blogsRouter.get("/:blogId/reviews", basicAuthMW, async (req, res, next) => {
   try {
     const blogId = req.params.blogId;
     const blog = await BlogModel.findById(blogId);
@@ -257,7 +271,7 @@ blogsRouter.get("/:blogId/reviews", async (req, res, next) => {
 });
 
 /**************************** get specific review from specific blog ******************************/
-blogsRouter.get("/:blogId/reviews/:reviewId", async (req, res, next) => {
+blogsRouter.get("/:blogId/reviews/:reviewId", basicAuthMW, async (req, res, next) => {
   try {
     const blog = await BlogModel.findById(req.params.blogId);
     if (blog) {
@@ -290,7 +304,7 @@ blogsRouter.get("/:blogId/reviews/:reviewId", async (req, res, next) => {
 });
 
 /**************************** delete specific review from specific blog ******************************/
-blogsRouter.delete("/:blogId/reviews/:reviewId", async (req, res, next) => {
+blogsRouter.delete("/:blogId/reviews/:reviewId", basicAuthMW, async (req, res, next) => {
   try {
     const modifiedBlog = await BlogModel.findByIdAndUpdate(
       req.params.blogId,
@@ -315,7 +329,7 @@ blogsRouter.delete("/:blogId/reviews/:reviewId", async (req, res, next) => {
 });
 
 /**************************** edit specific review from specific blog ******************************/
-blogsRouter.put("/:blogId/reviews/:reviewId", async (req, res, next) => {
+blogsRouter.put("/:blogId/reviews/:reviewId", basicAuthMW, async (req, res, next) => {
   try {
     const reqBlog = await BlogModel.findByIdAndUpdate(req.params.blogId);
 
