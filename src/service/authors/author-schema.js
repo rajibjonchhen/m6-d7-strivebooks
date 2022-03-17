@@ -5,9 +5,11 @@ const { Schema, model } = mongoose
 const AurthorSchema = new Schema({
 
 		"name":{type:String, required:true},
+    "surname": {type:String, required:true},
 		"avatar":{type:String},
 		"email":{type:String, required:true, unique:true },
-		"password":{type:String, required:true},
+		"password":{type:String},
+		"googleId":{type:String},
     "role" : {type:String, enum:["user", "admin"], default: "user"}
     },
     {

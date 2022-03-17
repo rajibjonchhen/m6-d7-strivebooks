@@ -57,9 +57,13 @@ authorsRouter.post("/login",async (req, res, next) => {
 authorsRouter.get("/googleLogin", passport.authenticate("google",{scope : ["email","profile"]}) )
 
 /*************************** get me back google *******************************/
-authorsRouter.get("/googleRedirect", passport.authenticate("google"), async(req, res, next) => {
+authorsRouter.get("/googleRedirect", passport.authenticate("google"), (req, res, next) => {
   try {
-    
+    console.log('i am back')
+    const token = req.user.token
+    console.log('i am back with token', token)
+    console.log("my token", req.user.token)
+    res.redirect(`${process.env.FE_URL}/home?token=${req.user.token}`)
   } catch (error) {
     
   }
@@ -68,6 +72,7 @@ authorsRouter.get("/googleRedirect", passport.authenticate("google"), async(req,
 /*************************** get me *******************************/
 authorsRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
+    
     const author = await AuthorModel.findById(req.author._id)
     console.log("author",author)
     res.send(author);
