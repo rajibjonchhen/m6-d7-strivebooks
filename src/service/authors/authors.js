@@ -8,7 +8,7 @@ import multer from "multer";
 import { basicAuthMW } from "../../auth/basic.js";
 import { authenticateAuthor, generateJWTToken } from "../../auth/tools.js";
 import { JWTAuthMiddleware } from "../../auth/token.js";
-
+import passport from "passport";
 const authorsRouter = Router();
 
 const cloudinaryUploader = multer({
@@ -52,20 +52,32 @@ authorsRouter.post("/login",async (req, res, next) => {
   }
 });
 
+/*************************** get me to google *******************************/
+
+authorsRouter.get("/googleLogin", passport.authenticate("google",{scope : ["email","profile"]}) )
+
+/*************************** get me back google *******************************/
+authorsRouter.get("/googleRedirect", passport.authenticate("google"), async(req, res, next) => {
+  try {
+    
+  } catch (error) {
+    
+  }
+})
+
 /*************************** get me *******************************/
 authorsRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
-    const reqAuthor = AuthorModel.findById(req.author._id)
-    // console.log("reqAuthor",reqAuthor)
-   
-    res.send(reqAuthor);
+    const author = await AuthorModel.findById(req.author._id)
+    console.log("author",author)
+    res.send(author);
   } catch (error) {
     next(error);
   }
 });
 
 /*************************** edit me *******************************/
-authorsRouter.put("/me", basicAuthMW, async (req, res, next) => {
+authorsRouter.put("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const author = await AuthorModel.findOne({_id:req.author._id})
     if(author){

@@ -8,7 +8,7 @@ const AurthorSchema = new Schema({
 		"avatar":{type:String},
 		"email":{type:String, required:true, unique:true },
 		"password":{type:String, required:true},
-    "role" : {type:String, enum:["user", "admin"]}
+    "role" : {type:String, enum:["user", "admin"], default: "user"}
     },
     {
         timestamps: true,
@@ -35,13 +35,13 @@ AurthorSchema.methods.toJSON = function(){
 AurthorSchema.statics.checkCredentials = async function(email, plainPw){
 
   const author = await this.findOne({email})
-  console.log(email, plainPw)
-  console.log(author)
+  // console.log(email, plainPw)
+  // console.log(author)
   if(author){
     const isMatch = await bcrypt.compare(plainPw, author.password)
-    console.log('isMatch',isMatch);
+    // console.log('isMatch',isMatch);
     const temp = isMatch?  author : null
-    console.log("return",temp);
+    // console.log("return",temp);
       return temp
 
   }else return null

@@ -5,13 +5,17 @@ import blogsRouter from "./service/blogs/blogs.js";
 import authorsRouter from "./service/authors/authors.js";
 import cors from 'cors'
 import { badRequestHandler, genericErrorHandler, notFoundHandler, unauthorizedHandler, forbiddenHandler } from "./service/errorHandler/errorHandler.js";
+import passport from "passport"
+import googleStrategy from './auth/0auth.js'
 const {PORT = 3001} = process.env
 
 const server = express()
 
+passport.use("google", googleStrategy)
+
 server.use(cors())
 server.use(express.json())
-
+server.use(passport.initialize())
 
 server.use("/blogs", blogsRouter)
 server.use("/authors", authorsRouter)
